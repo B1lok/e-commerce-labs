@@ -62,7 +62,9 @@ func main() {
 	jm.RegisterJob(scheduled.NewDailyWeatherUpdateJob(weatherRepo, subscriptionRepo, sender, cfg.ServerHost))
 	go jm.StartScheduler()
 
-	router := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	router.Use(gin.Recovery())
 	router.LoadHTMLGlob("templates/index.html")
 	router.Use(middleware.ErrorHandler())
 	router.Use(middleware.TransactionMiddleware(txManager))

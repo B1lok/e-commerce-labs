@@ -1,18 +1,19 @@
 services:
-  server:
+  app:
     build:
       context: .
       target: final
+    container_name: app
     ports:
       - "8080:8080"
     env_file:
       - .env
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
     networks:
       - app-network
-  postgres:
+  db:
     image: postgres:15
     restart: always
     environment:

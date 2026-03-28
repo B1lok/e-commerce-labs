@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Updates Subscription</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --success: #10b981;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --text: #1f2937;
+      --text-light: #6b7280;
+      --background: #f9fafb;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --input: #f3f4f6;
+      --radius: 0.5rem;
+      --transition: all 0.2s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--background);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #60a5fa, #3b82f6);
+      padding: 2rem;
+      color: white;
+      text-align: center;
+    }
+
+    .weather-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-header p {
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+
+    .card-body {
+      padding: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      padding-left: 2.75rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--input);
+      font-family: inherit;
+      font-size: 1rem;
+      color: var(--text);
+      transition: var(--transition);
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    input.error, select.error {
+      border-color: var(--error);
+    }
+
+    .error-message {
+      color: var(--error);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    .error-message.visible {
+      display: block;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.875rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    button:hover {
+      background: var(--primary-dark);
+    }
+
+    button:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .notification {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: var(--radius);
+      font-weight: 500;
+      text-align: center;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .notification.success {
+      background-color: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .notification.error {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: var(--error);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .shake {
+      animation: shake 0.4s ease-in-out;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      .card-header, .card-body {
+        padding: 1.5rem;
+      }
+
+      .card-header h1 {
+        font-size: 1.25rem;
+      }
+
+      input, select, button {
+        padding: 0.7rem;
+        font-size: 0.95rem;
+      }
+    }
+
+    /* Accessibility focus styles */
+    a:focus, button:focus, input:focus, select:focus {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    /* Skip to content for keyboard users */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--primary);
+      color: white;
+      padding: 8px;
+      z-index: 100;
+      transition: top 0.3s;
+    }
+
+    .skip-link:focus {
+      top: 0;
+    }
+  </style>
+</head>
+<body>
+<a href="#subscribe-form" class="skip-link">Skip to form</a>
+
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <div class="weather-icon">☁️</div>
+      <h1>Weather Updates Subscription</h1>
+      <p>Get timely weather forecasts delivered directly to your inbox</p>
+    </div>
+
+    <div class="card-body">
+      <form id="subscribe-form" novalidate>
+        <div class="form-group">
+          <label for="city">City</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🏙️</span>
+            <input
+                type="text"
+                id="city"
+                name="city"
+                placeholder="Enter your city"
+                required
+                aria-describedby="city-error"
+            >
+          </div>
+          <div id="city-error" class="error-message">Please enter a valid city name</div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <div class="input-wrapper">
+            <span class="input-icon">✉️</span>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="your.email@example.com"
+                required
+                aria-describedby="email-error"
+            >
+          </div>
+          <div id="email-error" class="error-message">Please enter a valid email address</div>
+        </div>
+
+        <div class="form-group">
+          <label for="frequency">Update Frequency</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🕒</span>
+            <select
+                id="frequency"
+                name="frequency"
+                required
+                aria-describedby="frequency-error"
+            >
+              <option value="">Select frequency</option>
+              <option value="hourly">Hourly</option>
+              <option value="daily">Daily</option>
+            </select>
+          </div>
+          <div id="frequency-error" class="error-message">Please select an update frequency</div>
+        </div>
+
+        <button type="submit" id="submit-button">Subscribe Now</button>
+      </form>
+
+      <div id="notification" class="notification" role="alert"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('subscribe-form');
+    const cityInput = document.getElementById('city');
+    const emailInput = document.getElementById('email');
+    const frequencySelect = document.getElementById('frequency');
+    const submitButton = document.getElementById('submit-button');
+    const notification = document.getElementById('notification');
+
+    const validators = {
+      city: (value) => {
+        return value.trim().length >= 2;
+      },
+      email: (value) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(value);
+      },
+      frequency: (value) => {
+        return value === 'hourly' || value === 'daily';
+      }
+    };
+
+    [cityInput, emailInput, frequencySelect].forEach(input => {
+      input.addEventListener('blur', () => validateField(input));
+      input.addEventListener('input', () => {
+        input.classList.remove('error');
+        document.getElementById(`${input.id}-error`).classList.remove('visible');
+      });
+    });
+
+    function validateField(field) {
+      const isValid = validators[field.id](field.value);
+      const errorElement = document.getElementById(`${field.id}-error`);
+
+      if (!isValid) {
+        field.classList.add('error');
+        errorElement.classList.add('visible');
+        return false;
+      } else {
+        field.classList.remove('error');
+        errorElement.classList.remove('visible');
+        return true;
+      }
+    }
+
+    function validateForm() {
+      let isValid = true;
+
+      [cityInput, emailInput, frequencySelect].forEach(input => {
+        if (!validateField(input)) {
+          isValid = false;
+          input.classList.add('shake');
+          setTimeout(() => input.classList.remove('shake'), 500);
+        }
+      });
+
+      return isValid;
+    }
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      if (!validateForm()) {
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = 'Subscribing...';
+
+      notification.style.display = 'none';
+      notification.className = 'notification';
+
+      try {
+        const response = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            city: cityInput.value.trim(),
+            email: emailInput.value.trim(),
+            frequency: frequencySelect.value
+          })
+        });
+
+        const result = await response.json();
+
+        if (response.status === 200) {
+          notification.textContent = result.description || 'Successfully subscribed to weather updates!';
+          notification.classList.add('success');
+          form.reset();
+        } else if (response.status === 400) {
+          notification.textContent = 'Please check your information and try again.';
+          notification.classList.add('error');
+        } else if (response.status === 409) {
+          notification.textContent = 'This email is already subscribed to weather updates.';
+          notification.classList.add('error');
+        } else {
+          notification.textContent = 'An unexpected server error occurred. Please try again later.';
+          notification.classList.add('error');
+        }
+
+      } catch (error) {
+        console.error('Submission error:', error);
+        notification.textContent = 'Unable to connect to the server. Please check your internet connection.';
+        notification.classList.add('error');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Subscribe Now';
+        notification.style.display = 'block';
+
+        notification.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  });
+</script>
+</body>
+</html>

@@ -2,9 +2,10 @@ package postgres
 
 import (
 	"fmt"
-	"github.com/golang-migrate/migrate/v4"
-	"log"
+	"log/slog"
 	"net/url"
+
+	"github.com/golang-migrate/migrate/v4"
 	"weather-api/internal/config"
 )
 
@@ -15,12 +16,12 @@ func RunMigrations(cfg config.Config) {
 
 	m, err := migrate.New("file://migrations", connectionString)
 	if err != nil {
-		log.Println("Migration initialization failed")
+		slog.Error("Migration initialization failed", "error", err)
 		return
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Printf("Migration failed: %v", err)
+		slog.Error("Migration failed", "error", err)
 	}
 }
 
@@ -30,11 +31,11 @@ func RunMigrationsWithPath(cfg config.Config, migrationPath string) {
 
 	m, err := migrate.New(migrationPath, connectionString)
 	if err != nil {
-		log.Printf("Migration initialization failed: %v", err)
+		slog.Error("Migration initialization failed", "error", err)
 		return
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Printf("Migration failed: %v", err)
+		slog.Error("Migration failed", "error", err)
 	}
 }

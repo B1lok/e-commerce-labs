@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"log"
+	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
 	"weather-api/internal/application/scheduled"
 	"weather-api/internal/application/services"
 	"weather-api/internal/config"
@@ -18,22 +18,33 @@ import (
 	cityValidator "weather-api/internal/infrastructure/http/validator"
 	weatherapi "weather-api/internal/infrastructure/http/weather-api"
 	"weather-api/internal/interface/api/rest"
+	"weather-api/pkg/logger"
 	"weather-api/pkg/middleware"
+
+	"github.com/gin-gonic/gin"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func main() {
+	logger.Init()
+
 	cfg, err := config.LoadConfig()
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		slog.Error("Failed to load config", "error", err)
+		os.Exit(1)
 	}
+
 	postgresconnector.RunMigrations(cfg)
 
 	db, err := postgresconnector.ConnectDB(cfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		slog.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
 	}
+
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	weatherRepo := weatherapi.NewWeatherRepository(cfg.WeatherApiKey)
 	weatherService := services.NewWeatherService(weatherRepo)
@@ -60,6 +71,21 @@ func main() {
 		c.HTML(200, "index.html", nil)
 	})
 
+	router.GET("/health", func(c *gin.Context) {
+		sqlDB, err := db.DB()
+		if err != nil {
+			slog.Error("Health check failed: cannot get underlying DB", "error", err)
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "unavailable", "reason": "database connection error"})
+			return
+		}
+		if err := sqlDB.Ping(); err != nil {
+			slog.Error("Health check failed: database ping failed", "error", err)
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "unavailable", "reason": "database unreachable"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
+	})
+
 	api := router.Group("/api")
 	{
 		api.GET("/weather", weatherController.GetWeather)
@@ -68,14 +94,42 @@ func main() {
 		api.GET("/unsubscribe/:token", subscriptionController.Unsubscribe)
 	}
 
+	serverAddr := fmt.Sprintf(":%s", cfg.ServerPort)
+	srv := &http.Server{
+		Addr:    serverAddr,
+		Handler: router,
+	}
+
 	go func() {
-		<-ctx.Done()
-		cancel()
+		slog.Info("Server starting", "address", serverAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Failed to start server", "error", err)
+			os.Exit(1)
+		}
 	}()
 
-	serverAddr := fmt.Sprintf(":%s", cfg.ServerPort)
-	log.Printf("Server starting on %s", serverAddr)
-	if err := router.Run(serverAddr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	<-ctx.Done()
+	slog.Info("SIGTERM received. Starting graceful shutdown...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		slog.Error("Server forced to shutdown", "error", err)
+	} else {
+		slog.Info("HTTP server stopped gracefully")
 	}
+
+	jm.Stop()
+
+	sqlDB, err := db.DB()
+	if err == nil {
+		if err := sqlDB.Close(); err != nil {
+			slog.Error("Error closing database connection", "error", err)
+		} else {
+			slog.Info("Database connection closed")
+		}
+	}
+
+	slog.Info("Shutdown complete. Exiting.")
 }

@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
-	"log"
+	"log/slog"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 	"weather-api/pkg/errors"
 )
 
@@ -20,12 +21,12 @@ func ErrorHandler() gin.HandlerFunc {
 
 		if apiErr, ok := errors.IsAPIError(err); ok {
 			if apiErr.Code >= 500 {
-				log.Printf("[ERROR] %s (wrapped: %v)", apiErr.Description, apiErr.Err)
+				slog.Error("API error", "description", apiErr.Description, "error", apiErr.Err)
 			}
 			c.AbortWithStatusJSON(apiErr.Code, gin.H{"description": apiErr.Description})
 			return
 		}
-		log.Printf("[ERROR] unhandled error: %v", err)
+		slog.Error("Unhandled error", "error", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"description": "Internal server error"})
 	}
 }

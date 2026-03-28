@@ -3,7 +3,7 @@ package scheduled
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 	"weather-api/internal/application/email"
@@ -48,7 +48,7 @@ func (d *DailyWeatherUpdateJob) Schedule() string {
 }
 
 func (d *DailyWeatherUpdateJob) Run(ctx context.Context) error {
-	log.Println("DailyWeatherUpdateJob started...")
+	slog.Info("DailyWeatherUpdateJob started")
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
@@ -56,7 +56,7 @@ func (d *DailyWeatherUpdateJob) Run(ctx context.Context) error {
 
 	groupedSubscriptions, err := d.SubscriptionRepository.FindGroupedSubscriptions(ctx, &freq)
 	if err != nil {
-		log.Printf("Failed to fetch subscriptions: %v", err)
+		slog.Error("Failed to fetch subscriptions", "error", err)
 		return err
 	}
 
@@ -86,7 +86,7 @@ func (d *DailyWeatherUpdateJob) Run(ctx context.Context) error {
 
 		weatherDaily, err := d.WeatherRepository.GetDailyForecast(ctx, subscriptionGroup.City)
 		if err != nil {
-			log.Printf("Failed to fetch weather for city %s: %v", subscriptionGroup.City, err)
+			slog.Error("Failed to fetch weather", "city", subscriptionGroup.City, "error", err)
 			continue
 		}
 
@@ -131,11 +131,11 @@ func (d *DailyWeatherUpdateJob) Run(ctx context.Context) error {
 	errors := <-errorCollector
 
 	if len(errors) > 0 {
-		log.Printf("Job completed with %d errors", len(errors))
+		slog.Warn("Job completed with errors", "error_count", len(errors))
 		return errors[0]
 	}
 
-	log.Println("DailyWeatherUpdateJob completed successfully")
+	slog.Info("DailyWeatherUpdateJob completed successfully")
 	return nil
 }
 
@@ -149,11 +149,11 @@ func (d *DailyWeatherUpdateJob) emailWorker(ctx context.Context, taskChan <-chan
 		default:
 			err := d.sender.WeatherDailyEmail(d.toWeatherDailyEmail(task.subscription, task.weatherDaily))
 			if err != nil {
-				log.Printf("Error sending email to %s: %v", task.subscription.Email, err)
+				slog.Error("Error sending email", "to", task.subscription.Email, "error", err)
 				select {
 				case errChan <- err:
 				default:
-					log.Printf("Error channel full, additional error: %v", err)
+					slog.Error("Error channel full, additional error", "error", err)
 				}
 			}
 		}

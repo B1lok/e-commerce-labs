@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
-	"log"
+	"log/slog"
 )
 
 type Config struct {
@@ -26,7 +26,7 @@ func LoadConfig() (Config, error) {
 	viper.SetConfigFile(".env")
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Print("No .env file found, binding individual environment variables.")
+		slog.Info("No .env file found, binding individual environment variables")
 		bindAllEnvVars()
 	}
 

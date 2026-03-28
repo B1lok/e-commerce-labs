@@ -2,8 +2,9 @@ package scheduled
 
 import (
 	"context"
+	"log/slog"
+
 	"github.com/robfig/cron/v3"
-	"log"
 )
 
 type JobManager struct {
@@ -29,13 +30,19 @@ func (jm *JobManager) StartScheduler() {
 		schedule := job.Schedule()
 		if _, err := jm.cron.AddFunc(schedule, func() {
 			if err := job.Run(jm.context); err != nil {
-				log.Printf("Error in job %s: %v", job.Name(), err)
+				slog.Error("Error in job", "job", job.Name(), "error", err)
 			} else {
-				log.Printf("Job %s executed successfully", job.Name())
+				slog.Info("Job executed successfully", "job", job.Name())
 			}
 		}); err != nil {
-			log.Printf("Failed to schedule job %s: %v", job.Name(), err)
+			slog.Error("Failed to schedule job", "job", job.Name(), "error", err)
 		}
 	}
 	jm.cron.Start()
+}
+
+func (jm *JobManager) Stop() {
+	slog.Info("Stopping scheduled jobs...")
+	jm.cron.Stop()
+	slog.Info("Scheduled jobs stopped")
 }

@@ -1,115 +1,25 @@
-# Weather Forecast Subscription Service
+# Weather Forecast API - Лабораторна робота №1
 
-This repository contains a fully implemented **Weather Forecast API service**, which allows users to **subscribe to regular weather updates** for a selected city.
+## Налаштування змінних оточення
 
-The service follows a predefined API contract (Swagger 2.0) and includes full backend functionality, a subscription HTML page, unit and integration tests, Docker-based deployments, and a complete CI/CD pipeline to Google Cloud Platform (GCP).
+Застосунок зчитує всі налаштування зі змінних оточення (12-Factor App). Жодних захардкоджених паролів чи URL в коді.
 
----
+| Змінна            | Опис                            | Приклад                    |
+|-------------------|---------------------------------|----------------------------|
+| `DB_HOST`         | Хост бази даних PostgreSQL      | `postgres` / `localhost`   |
+| `DB_PORT`         | Порт бази даних                 | `5432`                     |
+| `DB_USER`         | Користувач бази даних           | `postgres`                 |
+| `DB_PASSWORD`     | Пароль бази даних               | `postgres`                 |
+| `DB_NAME`         | Назва бази даних                | `weather`                  |
+| `SERVER_HOST`     | Публічна URL-адреса сервера     | `http://localhost:8080/`   |
+| `SERVER_PORT`     | Порт HTTP-сервера               | `8080`                     |
+| `WEATHER_API_KEY` | API-ключ від weatherapi.com     | `your-api-key`             |
+| `EMAIL_HOST`      | SMTP хост                       | `smtp.gmail.com`           |
+| `EMAIL_PORT`      | SMTP порт                       | `587`                      |
+| `EMAIL_USERNAME`  | Email-адреса для відправки      | `your-email@gmail.com`     |
+| `EMAIL_PASSWORD`  | Пароль або app-specific ключ    | `your-app-password`        |
 
-## Features
-
-- **REST API** that fully complies with the provided Swagger specification.
-- **Subscription system** with email confirmation and unsubscribe endpoints.
-- **Support for hourly and daily weather updates**.
-- **Persisted data in a relational database**.
-- **Database migrations** are automatically applied on service startup.
-- **Unit tests** with mocks for core services and repositories.
-- **Integration tests** using [Testcontainers](https://www.testcontainers.org/).
-- **CI/CD Pipeline**:
-  - Runs all tests (unit + integration).
-  - Builds and pushes a Docker image to **Docker Hub**.
-  - Deploys the app on a **GCP Virtual Machine**.
-- **Production configuration**:
-  - Uses a **secure GCP-hosted database**.
-  - Configured **NGINX reverse proxy**.
-  - HTTPS enabled via SSL key.
-  - **Custom domain name** configured using https://www.namecheap.com/
-- **HTML subscription page** for easier end-user access.
-  
----
-
-## API Specification
-
-The API follows this contract:
-
-- `GET /weather?city=CityName` - Get current weather for the given city.
-- `POST /subscribe` - Subscribe with email, city, and update frequency (hourly or daily).
-- `GET /confirm/{token}` - Confirm a new subscription via email token.
-- `GET /unsubscribe/{token}` - Unsubscribe via email token.
-
----
-
-## Testing
-
-- **Unit Tests**: Implemented for core services and repository layers using mocks.
-- **Integration Tests**: Use **Testcontainers** to spin up real PostgreSQL and simulate environment.
-- **Test Coverage**: Includes subscription flows, weather retrieval, and token validation logic.
-
----
-
-## CI/CD Pipeline
-
-CI/CD is configured to:
-
-1. Build and test the application using GitHub Actions.
-2. Run integration tests with Docker + Testcontainers.
-3. Build and push the application image to **Docker Hub**.
-4. SSH into a **GCP VM**, pull the new image, and restart the application.
-
-Secrets (API keys, SSH keys, etc.) are stored securely in GitHub Secrets.
-
----
-
-## Deployment Architecture
-
-| Component       | Technology Used        |
-|----------------|------------------------|
-| API Backend     | Go                     |
-| DB (Prod)       | GCP Cloud SQL (PostgreSQL) |
-| HTML Frontend   | Static HTML + CSS      |
-| Reverse Proxy   | NGINX                  |
-| SSL             | Namecheap Ssl key |
-| Domain          | Custom Domain + DNS    |
-| Containerization| Docker + Docker Compose |
-| CI/CD           | GitHub Actions         |
-| Hosting         | Google Cloud Platform  |
-
----
-
-##  Production Environment Setup
-
-- Custom domain: https://b1lokcode.me/  - hosted application available here
-- SSL certificate installed.
-- NGINX configured as a reverse proxy.
-- Environment variables stored securely on server.
-- Database connection is encrypted and secured by GCP firewall rules.
-
----
-
-## Local Development
-
-To run the Weather Subscription API locally, follow the steps below.
-
----
-
-### Prerequisites
-
-- [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
-- [Git](https://git-scm.com/)
-- Create your api key at https://www.weatherapi.com/
-- Create your email key from your google account
----
-
-### Step 1: Clone the Repository
-
-```bash
-git clone https://github.com/B1lok/weather-api.git
-cd weather-api
-```
-
-### Step 2: Create `.env` File
-
-Create a `.env` file in the project root and populate it with the following environment variables:
+Створіть `.env` файл у корені проекту:
 
 ```env
 DB_HOST=postgres
@@ -122,31 +32,78 @@ SERVER_PORT=8080
 WEATHER_API_KEY=your-api-key
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
-EMAIL_USERNAME=your-email-adress
-EMAIL_PASSWORD=your-api-key
+EMAIL_USERNAME=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
 ```
-### Step 3: Start with Docker Compose
 
-Build and run the application using Docker Compose:
+## Збірка та запуск
+
+### Запуск через Docker Compose
 
 ```bash
 docker-compose up --build
 ```
-Application now available at http://localhost:8080/ with a custom subscription page
 
-### Running Tests with Testcontainers locally
-
-To run integration tests that use **Testcontainers**, make sure the following prerequisites are met:
-
-#### Prerequisites
-
-- Docker is installed and running on your machine.
-- Go is installed (version 1.20+ recommended).
-
-#### Run the Tests
-
-Use the following command to run all tests, including those using Testcontainers:
+### Запуск тестів
 
 ```bash
 go test ./... -v
 ```
+
+## Автоматичне керування схемою БД (Міграції)
+
+Застосунок використовує **golang-migrate** для автоматичного керування схемою бази даних. Під час запуску застосунок автоматично перевіряє та застосовує всі наявні міграції з директорії `migrations/`.
+
+## Health Check (Глибока перевірка стану)
+
+**Ендпоінт:** `GET /health`
+
+Перевіряє з'єднання з базою даних через SQL ping.
+
+- **200 OK** — застосунок працює, база даних доступна
+- **503 Service Unavailable** — застосунок працює, але база даних недоступна
+
+### Підтвердження Health Check
+
+**БД підключена (200 OK):**
+
+```bash
+$ curl -i localhost:8080/health
+```
+![img.png](img/curl-success.png)
+
+**БД зупинена (503 Service Unavailable):**
+![img.png](img/db-off.png)
+```bash
+$ curl -i localhost:8080/health
+```
+
+![img.png](img/curl-fail.png)
+
+## Структуроване логування (JSON)
+
+Застосунок використовує `log/slog` з `JSONHandler` для виводу всіх логів у форматі JSON в STDOUT.
+
+**Обов'язкові поля:** `time` (timestamp), `level`, `msg` (message).
+
+### Приклад логів при запуску
+![img.png](img/log-info.png)
+### Приклад логу помилки
+
+![img.png](img/log-error.png)
+
+## Graceful Shutdown (Плавне завершення роботи)
+
+Застосунок обробляє сигнали `SIGTERM` та `SIGINT`.
+
+**Очікувана поведінка при отриманні сигналу:**
+
+1. Логується повідомлення `"SIGTERM received. Starting graceful shutdown..."`
+2. HTTP-сервер завершує обробку поточних запитів (таймаут 30 секунд)
+3. Зупиняються заплановані задачі (cron jobs)
+4. Закриваються з'єднання з базою даних
+5. Процес завершується з кодом `0`
+
+### Підтвердження Graceful Shutdown
+
+![img.png](img/graceful-shutdown.png)

@@ -6,8 +6,19 @@ services:
     container_name: app
     ports:
       - "8080:8080"
-    env_file:
-      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=weather
+      - SERVER_HOST=http://localhost:8080/
+      - SERVER_PORT=8080
+      - WEATHER_API_KEY=${WEATHER_API_KEY:-dummy}
+      - EMAIL_HOST=${EMAIL_HOST:-smtp.gmail.com}
+      - EMAIL_PORT=${EMAIL_PORT:-587}
+      - EMAIL_USERNAME=${EMAIL_USERNAME:-dummy@gmail.com}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD:-dummy}
     depends_on:
       db:
         condition: service_healthy

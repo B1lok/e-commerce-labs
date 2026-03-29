@@ -1,0 +1,33 @@
+name: Lab 3 Grading
+
+on: [push]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create KinD cluster
+        uses: helm/kind-action@v1
+
+      - name: Build Docker image
+        run: docker build -t ecommerce-app:latest --target final .
+
+      - name: Load image into KinD
+        run: kind load docker-image ecommerce-app:latest
+
+      - name: Apply Kubernetes manifests
+        run: kubectl apply -f k8s/
+
+      - name: Wait for Postgres to be ready
+        run: kubectl rollout status deployment/postgres --timeout=60s
+
+      - name: Wait for App to be ready
+        run: kubectl rollout status deployment/ecommerce-app --timeout=90s
+
+      - name: Run Grading Script
+        run: |
+          chmod +x ./tests/lab3_test.sh
+          ./tests/lab3_test.sh

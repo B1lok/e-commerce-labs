@@ -11,12 +11,17 @@ jobs:
 
       - name: Create KinD cluster
         uses: helm/kind-action@v1
+        with:
+          cluster_name: kind
+
+      - name: Verify cluster
+        run: kubectl cluster-info
 
       - name: Build Docker image
         run: docker build -t ecommerce-app:latest --target final .
 
       - name: Load image into KinD
-        run: kind load docker-image ecommerce-app:latest
+        run: kind load docker-image ecommerce-app:latest --name kind
 
       - name: Apply Kubernetes manifests
         run: kubectl apply -f k8s/

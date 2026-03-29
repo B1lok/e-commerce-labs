@@ -1,0 +1,14 @@
+replicaCount: 3
+
+image:
+  repository: ecommerce-app
+  tag: latest
+  pullPolicy: Never
+
+resources:
+  limits:
+    cpu: 512m
+    memory: 512Mi
+  requests:
+    cpu: 256m
+    memory: 256Mi

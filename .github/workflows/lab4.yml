@@ -1,0 +1,23 @@
+name: Lab 4 Grading
+
+on: [push]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create KinD cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: kind
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Run Grading Script
+        run: |
+          chmod +x ./tests/lab4_test.sh
+          ./tests/lab4_test.sh
